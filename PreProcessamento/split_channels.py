@@ -3,20 +3,21 @@ from matplotlib.cbook import get_sample_data
 import cv2
 import numpy
 
-from paths_names import ORIGINALS, REDSCALE, BLUESCALE, GREENSCALE, REDSCALE, GRAYSCALE
+for i in range(1, 5):
 
-for i in range(1, 31):
+    original = 'cropped_image' + str(i) +'.jpg'
 
-    original = ORIGINALS + 'cropped_image' + str(i) +'.png'
+    red_filename = 'red_scale' + str(i) + '.jpg'
 
-    red_filename = REDSCALE + 'red_scale' + str(i) + '.png'
+    green_filename = 'green_scale' + str(i) + '.jpg'
 
-    green_filename = GREENSCALE + 'green_scale' + str(i) + '.png'
+    blue_filename = 'blue_scale' + str(i) + '.jpg'
 
-    blue_filename = BLUESCALE + 'blue_scale' + str(i) + '.png'
+    gray_filename = 'gray_scale' + str(i) + '.jpg'
 
-    gray_filename = GRAYSCALE + 'gray_scale' + str(i) + '.png'
 
+    print(original)
+    
     image = cv2.imread(original)
 
     gray = cv2.imread(original, cv2.IMREAD_GRAYSCALE)
