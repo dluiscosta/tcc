@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Sep 08 21:48:38 2017
+
+@author: Daniel
+"""
+
 import cv2
 import cv2.cv
 import argparse
@@ -31,51 +38,19 @@ args = parser.parse_args()
 
 steps = []
 
-#Abre a imagem de entrada
+#Abre a imagem de entrada e considera apenas o canal azul
 input_filename = args.input
-image = cv2.imread(input_filename, cv2.IMREAD_GRAYSCALE)
-
-#image = cv2.resize(image, (int(0.4*image.shape[0]), int(0.4*image.shape[1])))
+image = cv2.imread(input_filename, cv2.IMREAD_COLOR)[:,:,0]
 
 if args.analise:
     steps.append(cv2.cvtColor(image, cv2.cv.CV_GRAY2RGB))
 
 
-
-#Usa um filtro suavizador gaussiano para redução de ruídos  
-image = cv2.GaussianBlur(image, (13,13), 2, 2)
-if args.analise:
-    steps.append(cv2.cvtColor(image, cv2.cv.CV_GRAY2RGB))
-    
-#Detecta as bordas da imagem
-edges = cv2.Canny(image, 80, 0, apertureSize = 3)   
-if args.analise:
-    image_with_edges = cv2.cvtColor(image, cv2.cv.CV_GRAY2RGB)
-    image_with_edges[edges==255] = [0, 0, 255];
-    steps.append(image_with_edges)
-
-#Aplica a transformada de Hough para detectar os círculos na imagem
-circles = cv2.HoughCircles(image, cv2.cv.CV_HOUGH_GRADIENT, 
-                           1, 
-                           minDist=image.shape[0]/100,
-                           param2=80,
-                           minRadius=0,
-                           maxRadius=0
-                           )
+#Binarização por Otsu
+mask = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
 if args.analise:
-    if circles is None:
-        print "Nenhum círculo foi encontrado."
-    else:
-        print "Foram encontrados " + str(len(circles[0])) + " círculos."        
-        image_with_circles = cv2.cvtColor(image, cv2.cv.CV_GRAY2RGB)
-        #Desenha e imprime as informações dos círculos
-        for i in range(0, len(circles[0])):
-            print circles[0][i]
-            center = (int(circles[0][i][0]), int(circles[0][i][1])) 
-            cv2.circle(image_with_circles, center, 
-                       int(circles[0][i][2]), (255, 0, 0), 3)
-        steps.append(image_with_circles)
+    steps.append(cv2.cvtColor(mask[1], cv2.cv.CV_GRAY2RGB))
 
 #Exibe os passos do procedimento
 if args.analise:
