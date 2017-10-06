@@ -1,6 +1,0 @@
-O formato da lâmina é assumido a priori como o de um círculo. As anotações, contudo, foram extraídas pelo encaixe manual de uma elipse; a restrição de que a elipse seja um círculo, portanto, não é imposta sobre os dados da anotação.
-
--- lamina001.txt
-Sendo o círculo da lâmina inscrito em um quadrado, cada linha contém as posições X e Y do canto esquerdo-superior do quadrado, sua largura W e altura H, respectivamente.
-A i-ésima linha contém informação referente à imagen número i*10. Medidas retiradas por Daniel.
-
