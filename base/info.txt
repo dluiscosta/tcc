@@ -1,0 +1,1 @@
+Essa pasta contém as 129 imagens da base, nomeadas com o seu índice, de 1 a 129 e na extensão .jpg.
