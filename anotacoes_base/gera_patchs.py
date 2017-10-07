@@ -11,5 +11,6 @@ for i in range(1, 129):
         patch.canto_sup_esq = (random.randint(0, 3120), random.randint(0, 4160))
         while not laminas[i].patchEstaDentro(patch):
             patch.canto_sup_esq = (random.randint(0, 3120), random.randint(0, 4160))
-
+        patchs[i] = patch
+        
 dill.dump_session(r'anotacoes_base\patchs.pkl')
