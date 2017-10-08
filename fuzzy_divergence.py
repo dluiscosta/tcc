@@ -6,6 +6,7 @@ from exibir_imagens import show_multiple_images
 #Parser de parâmetros do script
 parser = argparse.ArgumentParser(description="Limiarização por divergência fuzzy.")
 parser.add_argument("input", help="Nome do arquivo da imagem de entrada.", action="store")
+parser.add_argument("-m", "--mask", help="Nome do arquivo da imagem binária de máscara.", action="store")
 parser.add_argument("-s", "--salvar", help="Nome do arquivo da imagem de saída.", action="store")
 parser.add_argument("-a", "--analise", help="Modo de análise.", action="store_true")
 args = parser.parse_args()
@@ -17,21 +18,32 @@ steps = []
 
 #Abre a imagem de entrada e considera apenas o canal azul
 input_filename = args.input
-image = cv2.imread(input_filename, cv2.IMREAD_GRAYSCALE)
+#image = cv2.imread(input_filename, cv2.IMREAD_GRAYSCALE)
+image = cv2.imread(input_filename, cv2.IMREAD_COLOR)[:,:,1]
 
 if args.analise:
     steps.append(cv2.cvtColor(image, cv2.cv.CV_GRAY2RGB))
 
+import numpy
+mask = None
+if args.mask != None:
+    mask = cv2.imread(args.mask, cv2.IMREAD_GRAYSCALE)
+else:
+    mask = numpy.zeros(image.shape, dtype=numpy.uint8)
+    mask[:][:] = numpy.uint8(255)
+
+if args.analise:
+    cortada = cv2.bitwise_and(image, image, mask=mask)
+    steps.append(cv2.cvtColor(cortada, cv2.cv.CV_GRAY2RGB))
 
 #Extrai o histograma
-histograma = cv2.calcHist([image], [0], None, [256], [0, 256])
-
+histograma = cv2.calcHist([image], [0], mask, [256], [0, 256])
 if args.analise:
     from matplotlib import pyplot as plt
     plt.plot(histograma, color = 'b')
     plt.xlim([0,256])
     plt.show()
- 
+  
 #----- Fuzzy Divergence -----
 from math import pi as pi
 from math import e as e
@@ -63,14 +75,6 @@ def divergencia_fuzzy(limiar, mi_b, mi_f):
                              - pertinencia*e**(1-pertinencia)
                              - (2-pertinencia)*e**(pertinencia-1)
                              )
-   
-    """
-    from matplotlib import pyplot as plt
-    plt.plot(pertinencias, color = 'b')
-    plt.xlim([0,256])
-    plt.show()
-    print(limiar, mi_b, mi_f, divergencia)
-    """
    
     return divergencia
     
@@ -127,15 +131,17 @@ if args.analise:
     print (melhor_limiar, menor_divergencia)
 
 #aplica o limiar ótimo encontrado na limiarização
-segment = cv2.threshold(image, melhor_limiar, 255, cv2.THRESH_BINARY)
+segment = cv2.threshold(image, melhor_limiar, 255, cv2.THRESH_BINARY_INV)[1]
+segment = cv2.bitwise_and(segment, segment, mask=mask)
 if args.analise: 
-    steps.append(cv2.cvtColor(segment[1], cv2.cv.CV_GRAY2RGB))
+    steps.append(cv2.cvtColor(segment, cv2.cv.CV_GRAY2RGB))
 
 #usa metade do limiar como instruído no artigo do Ghosh de 2010 para se 
 #encontrar os núcleos
-segment_div_2 = cv2.threshold(image, melhor_limiar/2, 255, cv2.THRESH_BINARY)
+segment_div_2 = cv2.threshold(image, melhor_limiar/2, 255, cv2.THRESH_BINARY_INV)[1]
+segment_div_2 = cv2.bitwise_and(segment_div_2, segment_div_2, mask=mask)
 if args.analise: 
-    steps.append(cv2.cvtColor(segment_div_2[1], cv2.cv.CV_GRAY2RGB))
+    steps.append(cv2.cvtColor(segment_div_2, cv2.cv.CV_GRAY2RGB))
     
 #----- /Fuzzy Divergence -----
 
@@ -143,3 +149,7 @@ if args.analise:
 #Exibe os passos do procedimento
 if args.analise:
     show_multiple_images(steps, "Passo a passo")
+
+#Se especificado, salva a imagem de saída
+if args.salvar != None:
+    cv2.imwrite(args.salvar, segment)
