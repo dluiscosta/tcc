@@ -2,9 +2,39 @@ import cv2
 import cv2.cv
 import math
 import numpy as np
-from screeninfo import get_monitors
-    
+
+#Mostra n imagens lado a lado.
+def mostra_imagens(imagens, titulo, subtitulos=[]):
+    from matplotlib import pyplot as plt
+    figura = plt.figure()
+    for i in range(0, len(imagens)):
+        #se o formato de entrada for GRAYSCALE, converte para RGB
+        if len(imagens[i].shape) == 2:
+            imagens[i] = cv2.cvtColor(imagens[i], cv2.cv.CV_GRAY2RGB)
+            
+        subplot = figura.add_subplot(1, len(imagens), i+1)
+        subplot.axis('off')
+        if i < len(subtitulos):
+            subplot.set_title(subtitulos[i])
+        subplot.imshow(imagens[i])
+    plt.suptitle(titulo)
+    plt.show()
+
+            
+def mostra_imagem(imagem, titulo):
+    from matplotlib import pyplot as plt
+    if not isinstance(imagem[0,0], (list, tuple)):
+        imagem = cv2.cvtColor(imagem, cv2.cv.CV_GRAY2RGB)
+        
+    plt.figure()
+    plt.axis('off')
+    plt.title(titulo)
+    plt.imshow(imagem)
+    plt.show()
+
+
 def show_image(image, image_name):
+    from screeninfo import get_monitors
     height, width = image.shape[0:2]
     cv2.namedWindow(image_name, cv2.WINDOW_NORMAL) 
     
@@ -17,6 +47,7 @@ def show_image(image, image_name):
     cv2.imshow(image_name, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
 
 def show_multiple_images(images, window_name):
     if len(images) > 6:
