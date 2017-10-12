@@ -11,6 +11,8 @@ def mostra_imagens(imagens, titulo, subtitulos=[]):
         #se o formato de entrada for GRAYSCALE, converte para RGB
         if len(imagens[i].shape) == 2:
             imagens[i] = cv2.cvtColor(imagens[i], cv2.cv.CV_GRAY2RGB)
+        else:
+            imagens[i] = cv2.cvtColor(imagens[i], cv2.cv.CV_BGR2RGB)
             
         subplot = figura.add_subplot(1, len(imagens), i+1)
         subplot.axis('off')
@@ -20,7 +22,7 @@ def mostra_imagens(imagens, titulo, subtitulos=[]):
     plt.suptitle(titulo)
     plt.show()
 
-            
+'''
 def mostra_imagem(imagem, titulo):
     from matplotlib import pyplot as plt
     if not isinstance(imagem[0,0], (list, tuple)):
@@ -63,3 +65,4 @@ def show_multiple_images(images, window_name):
         container[y*height:(y+1)*height,x*width:(x+1)*width] = images[i]
     show_image(container, window_name)
 
+'''
