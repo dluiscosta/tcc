@@ -1,6 +1,7 @@
 import cv2
 import cv2.cv
 import numpy as np
+from exibir_imagens import mostra_imagens
 
 #Ordem em que a base sera anotada.
 la1 = [111, 128, 77, 82, 86, 115, 90, 81, 13, 8, 47, 5, 93, 36, 26, 53, 54, 79,
@@ -13,6 +14,7 @@ la1 = [111, 128, 77, 82, 86, 115, 90, 81, 13, 8, 47, 5, 93, 36, 26, 53, 54, 79,
        84, 41, 0, 2, 69, 78]
 
 shape_imagens = (4160, 3120) #altura, largura
+shape_patch = (500, 500) #altura, largura
 
 class Lamina:
     #Recebe opcionalmente como parametros as coordenadas do canto superior 
@@ -40,16 +42,46 @@ class Lamina:
     #Checa se a regiao de um patch esta completamente dentro da lamina atraves
     #da checagem dos quatro cantos.
     def patch_esta_dentro(self, patch):
-        return (self.esta_dentro(patch.canto) and 
-                self.esta_dentro(patch.canto + (shape_imagens[1], 0)) and
-                self.esta_dentro(patch.canto + (shape_imagens[1], shape_imagens[0])) and
-                self.esta_dentro(patch.canto + (0,  shape_imagens[0])))
+        h, w = shape_patch
+        x, y = patch.canto
+        return (self.esta_dentro((x, y)) and self.esta_dentro((x + w, y)) and 
+                self.esta_dentro((x + w, y + h)) and self.esta_dentro((x, y + h)))
     
-    def avaliar_lamina(self, tentativa, analise=False):
-        print "" #FAZER
+    def avaliar_lamina(self, tentativa, analise=False, indice=None):
+        im = self.get_imagem()
+        
+        import numpy as np
+        comp = np.zeros(shape_imagens + (3,), dtype=np.uint8)
+        comp[:,:,0] = im
+        comp[:,:,2] = tentativa
+             
+        hist = cv2.calcHist([comp], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
+        perdidos = hist[255,0,0] #pixels da lamina anotada que nao foram pegos
+        excesso = hist[0,0,255] #pixels que foram pegos a mais
+        #Atribui mais peso a area exterior a lamina que foi pega e pode,
+        #nos proximos passos, gerar regioes nao legitimas na periferia da lamina.
+        nota = perdidos + 3*excesso 
+        nota = nota/(shape_imagens[0]*shape_imagens[1]) #normaliza
+        nota = 1-nota #quanto maior melhor
+                     
+        if analise:
+            if indice is None:
+                mostra_imagens([comp], "")
+            else:
+                original = cv2.imread("base\\" + str(indice) + ".jpg", cv2.IMREAD_COLOR)
+                rosa = np.array([255, 0, 255], dtype="uint8")
+                comum = cv2.inRange(comp, rosa, rosa)
+                contours, hierarchy = cv2.findContours(comum, 
+                                               cv2.RETR_CCOMP,
+                                               cv2.CHAIN_APPROX_NONE)
+                cv2.drawContours(original, contours, -1, (0,255,0), 3)
+                mostra_imagens([comp, original], "")
+            print "Pixels perdidos: " + str(perdidos)
+            print "Pixels pegos em excesso: " + str(excesso)
+            print "\n\n"
 
-shape_patch = (500, 500) #altura, largura
-
+        return nota
+            
 class Patch:
     def __init__(self, canto = (None, None), indice = None):
         self.canto = canto #(x, y) canto superior esquerdo
@@ -74,13 +106,12 @@ class Imagem:
         if self.lamina is None:
             raise Exception("Voce nao definiu a lamina!")
         elif self.patch is None:
-            import random
-            random.seed(self.indice)
-            patch = Patch((random.randint(0, shape_imagens[1]),
-                           random.randint(0, shape_imagens[0])))
+            import random as rd
+            rd.seed(self.indice)
+            h, w = shape_imagens
+            patch = Patch(canto = (rd.randint(0, h), rd.randint(0, w)))
             while not self.lamina.patch_esta_dentro(patch):
-                patch.canto = (random.randint(0, shape_imagens[1]), 
-                               random.randint(0, shape_imagens[0]))
+                patch.canto = (rd.randint(0, h), rd.randint(0, w))
             patch.indice = self.indice
             self.patch = patch
             return patch

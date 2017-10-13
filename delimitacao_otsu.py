@@ -8,7 +8,7 @@ def delimitacao_otsu(imagem, analise=False):
         print "- Delimitacao por limiarizacao de Otsu -"
         mostra_imagens([imagem], "", ["Imagem de entrada, apenas um canal"])
         
-    #Binarização por Otsu
+    #Binarizacao por Otsu
     limiar, binaria = cv2.threshold(imagem, 0, 255, 
                                     cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     
@@ -18,11 +18,11 @@ def delimitacao_otsu(imagem, analise=False):
         
     return binaria
 
-#Parser de parâmetros do script
-parser = argparse.ArgumentParser(description="Delimita a região circular da lâmina.")
+#Parser de parametros do script
+parser = argparse.ArgumentParser(description="Delimita a regiao circular da lamina.")
 parser.add_argument("-i", "--input", help="Nome do arquivo da imagem de entrada.", action="store")
-parser.add_argument("-s", "--salvar", help="Nome do arquivo da imagem de saída.", action="store")
-parser.add_argument("-a", "--analise", help="Modo de análise.", action="store_true")
+parser.add_argument("-s", "--salvar", help="Nome do arquivo da imagem de saida.", action="store")
+parser.add_argument("-a", "--analise", help="Modo de analise.", action="store_true")
 args = parser.parse_args()
 
 #Abre a imagem de entrada e considera apenas o canal azul
@@ -32,6 +32,6 @@ if input_filename is not None:
 
     binaria = delimitacao_otsu(imagem, args.analise)
     
-    #Se especificado, salva a imagem de saída
+    #Se especificado, salva a imagem de saida
     if args.salvar != None:
         cv2.imwrite(args.salvar, binaria)
