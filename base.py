@@ -128,7 +128,7 @@ class Base:
 
     def anotar_lamina(self):
         for i in la1:
-            if self.imagens[i].lamina is None:
+            if self.imagens[i-1].lamina is None:
                 print "A proxima lamina a ser anotada eh a " + str(i)
                 x = int(raw_input("Canto x: "))
                 y = int(raw_input("Canto y: "))
