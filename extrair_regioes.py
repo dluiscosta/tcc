@@ -20,7 +20,7 @@ def extrair_regioes(imagem, analise=False):
         c = numpy.zeros((1, 1, 3), dtype=numpy.uint8) #imagem para conversao
         imagem_rgb = cv2.cvtColor(imagem, cv2.cv.CV_GRAY2RGB)
         for i in range(0, len(contours)):
-            #Gera cor aleatória com saturacao e valor máximo, apenas alterando o hue.
+            #Gera cor aleatoria com saturacao e valor maximo, apenas alterando o hue.
             c[0][0] = [random.randint(0, 180), 100, 100] 
             c2 = cv2.cvtColor(c, cv2.COLOR_HSV2BGR)         
             color = numpy.array((int(c2[0][0][0]), int(c2[0][0][1]), int(c2[0][0][2])))   
@@ -44,7 +44,7 @@ def extrair_regioes(imagem, analise=False):
         
     return contours, hierarchy
                         
-#Parser de parâmetros do script
+#Parser de parametros do script
 parser = argparse.ArgumentParser(description="Extracao de regioes conexas. As regioes sao as brancas e o background preto.")
 parser.add_argument("-i", "--input", help="Nome do arquivo da imagem de entrada, uma imagem binaria.", action="store")
 parser.add_argument("-s", "--salvar", help="Contornos e hierarquia em um arquivo pickle.", action="store")
