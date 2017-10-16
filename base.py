@@ -16,6 +16,13 @@ la1 = [111, 128, 77, 82, 86, 115, 90, 81, 13, 8, 47, 5, 93, 36, 26, 53, 54, 79,
 shape_imagens = (4160, 3120) #altura, largura
 shape_patch = (500, 500) #altura, largura
 
+class Celula:
+    def __init__(self, indice, tipo, componentes, buracos):
+        self.indice = indice 
+        self.tipo = tipo # 'n'eutrofilo, 'l'eucocito, 'm'onocito
+        self.componentes = componentes
+        self.buracos = buracos
+
 class Lamina:
     #Recebe opcionalmente como parametros as coordenadas do canto superior 
     #esquerdo e o formato (largura e altura) do retangulo no qual a elipse
@@ -86,7 +93,7 @@ class Patch:
     def __init__(self, canto = (None, None), indice = None):
         self.canto = canto #(x, y) canto superior esquerdo
         self.indice = indice
-        #anotacoes
+        self.celulas = None
         
     def get_imagem(self):
         x, y = self.canto
@@ -94,6 +101,45 @@ class Patch:
         imagem = cv2.imread("base\\" + str(self.indice) + ".jpg", cv2.IMREAD_COLOR)
         return imagem[y : y + h, x : x + w]
         
+    def anota_celulas(self, imagem_anotacoes):
+        cels = []
+        ind = 0
+        for tipo in [(0, 'l'), (160, 'm'), (255, 'n')]: #para cada tipo de celula              
+            for r in range(0, 50):
+                #Extrai os contornos das regioes com um valor de R
+                val = np.array([int(tipo[0]), 0, r])
+                im = cv2.inRange(imagem_anotacoes, val, val)
+                contours, hierarchy = cv2.findContours(im, 
+                       cv2.RETR_CCOMP, #associa contornos de componentes com contornos de buracos
+                       cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno
+                
+                #Itera pelos contornos e constroi as celulas
+                if r == 0: #cada regiao conexa eh uma celula diferente
+                    for i in range(0, len(contours)):
+                        if hierarchy[0,i,3] == -1: #nao tem pai -> eh contorno exterior
+                            comp = [contours[i]]
+                            bur = []
+                            if hierarchy[0,i,2] != -1: #ha filho(s) -> ha buraco(s)
+                                i2 = hierarchy[0,i,2] #primeiro filho
+                                bur.append(contours[i2])
+                                while hierarchy[0,i2,0] != -1: #itera pelos outros filhos
+                                    i2 = hierarchy[0,i2,0]
+                                    bur.append(contours[i2])
+                            cels.append(Celula(self.indice*1000 + ind, tipo[1], comp, bur))
+                            ind = ind + 1
+                else: #todas regioes nesse valor de R sao uma unica celula
+                    comp = []
+                    bur = []
+                    for i in range(0, len(contours)):
+                        if hierarchy[0,i,3] == -1: #nao tem pai -> eh contorno exterior
+                            comp.append(contours[i])
+                        else: #tem pai -> eh contorno interior (buraco)
+                            bur.append(contours[i])
+                    if comp:
+                        cels.append(Celula(self.indice*1000 + ind, tipo[1], comp, bur))
+                        ind = ind + 1
+        self.celulas = cels
+                        
 class Imagem:
     def __init__(self, indice):
         self.indice = indice
