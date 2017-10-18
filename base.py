@@ -297,12 +297,12 @@ class Base:
         
     def salvar(self):
         import pickle
-        with open("anotacoes_base\\anotacoes.pkl", "wb") as f:
+        with open("anotacoes.pkl", "wb") as f:
             pickle.dump(self, f)
             f.close()
       
          
 import pickle
-with open("anotacoes_base\\anotacoes.pkl", "rb") as f:
+with open("anotacoes.pkl", "rb") as f:
     base = pickle.load(f)
     f.close()
