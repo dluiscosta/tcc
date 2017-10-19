@@ -22,7 +22,24 @@ class Celula:
         self.tipo = tipo # 'n'eutrofilo, 'l'eucocito, 'm'onocito
         self.componentes = componentes
         self.buracos = buracos
-
+        self.area = None
+        
+    def get_area(self):
+        if hasattr(self, 'area') and self.area is not None:
+            return self.area
+        else:
+            im = np.zeros(shape_patch, dtype="uint8")
+            
+            #Desenha a celula na primeira imagem
+            cv2.drawContours(im, self.componentes, -1, [255], -1)
+            cv2.drawContours(im, self.componentes, -1, [255], 2)
+            cv2.drawContours(im, self.buracos, -1, [0], -1)
+            
+            #Conta os pixels do foreground
+            self.area = np.count_nonzero(im)
+            return self.area            
+            
+        
 class Lamina:
     #Recebe opcionalmente como parametros as coordenadas do canto superior 
     #esquerdo e o formato (largura e altura) do retangulo no qual a elipse
@@ -147,21 +164,6 @@ class Patch:
         contours, hierarchy = tentativa
                 
         cel = None
-        def area_celula():
-            area = 0
-            for comp in cel.componentes:
-                area = area + cv2.contourArea(comp)
-            for bur in cel.buracos:
-                area = area - cv2.contourArea(bur)
-                
-            im3 = np.zeros(shape_patch, dtype="uint8")
-            cv2.drawContours(im3, cel.componentes, -1, [255], -1)
-            cv2.drawContours(im3, cel.componentes, -1, [255], 2)
-            cv2.drawContours(im3, cel.buracos, -1, [0], -1)
-            print (area, np.count_nonzero(im3))
-            area = np.count_nonzero(im3)
-            return area
-            
         inf = shape_patch[0]*shape_patch[1] #virtualmente infinito
         im1, im2 = np.zeros((2,) + shape_patch, dtype="uint8") #gera duas imagens pretas para comparacao
         def diferenca(idx_cont):     
@@ -169,36 +171,42 @@ class Patch:
                 return inf
             
             #Desenha a celula na primeira imagem
-            cv2.drawContours(im1, cel.componentes, -1, [255], -1)
-            cv2.drawContours(im1, cel.componentes, -1, [255], 2)
-            cv2.drawContours(im1, cel.buracos, -1, [0], -1)
+            cv2.drawContours(im1, cel.componentes, -1, [255], -1) #preenchimento
+            cv2.drawContours(im1, cel.componentes, -1, [255], 2) #borda
+            cv2.drawContours(im1, cel.buracos, -1, [0], -1) #buracos
             
             #Desenha a regiao na segunda imagem
             cv2.drawContours(im2, contours, idx_cont, [255], -1) #preenchimento
             cv2.drawContours(im2, contours, idx_cont, [255], 2) #borda
             if hierarchy[0,idx_cont,2] != -1: #ha filho(s) -> buraco(s)
                idx_filho = hierarchy[0,idx_cont,2] #primeiro filho
-               cv2.drawContours(im2, contours, idx_filho, [0], 3)  
+               cv2.drawContours(im2, contours, idx_filho, [0], -1)  
                while hierarchy[0,idx_filho,0] != -1: #itera pelos outros filhos
                    idx_filho = hierarchy[0,idx_filho,0]
-                   cv2.drawContours(im2, contours, idx_filho, [0], 3)  
+                   cv2.drawContours(im2, contours, idx_filho, [0], -1)  
             
             #Calcula a area da diferenca entre as regioes (XOR nos pixels)
             dif = np.count_nonzero(cv2.bitwise_xor(im1,im2))
             
             #Restaura as imagens pretas
-            cv2.drawContours(im1, cel.componentes, -1, [0], -1)
+            cv2.drawContours(im1, cel.componentes, -1, [0], -1) #preenchimento
+            cv2.drawContours(im1, cel.componentes, -1, [0], 2) #borda
             cv2.drawContours(im2, contours, idx_cont, [0], -1) #preenchimento
             cv2.drawContours(im2, contours, idx_cont, [0], 2) #borda
 
             return dif
         
         im_an = None
+        im_alpha = None
         if analise:
+            #Desenha as regioes segmentadas em cinza
             im_an = np.zeros(shape_patch + (3,), dtype="uint8")
             im_an[:,:,:] = 255 
             cv2.drawContours(im_an, contours, -1, [200, 200, 200], -1)
             cv2.drawContours(im_an, contours, -1, [200, 200, 200], 2)
+            
+            #Prepara uma imagem que sera sobreposta com transparencia
+            im_alpha = np.zeros(shape_patch + (3,), dtype="uint8")
             
         dif_acc = 0
         for c in self.celulas: #para cada celula anotada
@@ -209,40 +217,43 @@ class Patch:
             
             #uma celula nao pode gerar mais penalidade que a sua area
             dif = diferenca(reg)
-            area = area_celula()
+            area = cel.get_area()
             if dif > area:
-                print "NO MATCH"
                 reg = -1 #nenhuma regiao correspondente
                 dif_acc = dif_acc + area #acumula a area
             else:
                 dif_acc = dif_acc + dif #acumula a diferenca
         
             if analise:
-                color = None
+                color_rgba = None
                 if reg != -1: #se ha regiao correspondente
-                    color = [255, 150, 50] #azul
+                    import matplotlib.cm as cm
+                    color_rgba = cm.winter(1 - float(dif)/float(area), 1, True)
                 else:
-                    color = [0, 0, 255] #vermelho
-                    
-                #Desenha o contorno da celula
-                cv2.drawContours(im_an, cel.componentes, -1, color, 1)
-                cv2.drawContours(im_an, cel.buracos, -1, color, 1)
-   
-                if reg != -1:             
-                    #Calcula os centros de massa da celula e da regiao correspondente
-                    M = cv2.moments(cel.componentes[0]) 
-                    c_x = int(M["m10"] / M["m00"])
-                    c_y = int(M["m01"] / M["m00"])
-                    M = cv2.moments(contours[reg]) 
-                    r_x = int(M["m10"] / M["m00"])
-                    r_y = int(M["m01"] / M["m00"])
-                    
-                    print ((c_x, c_y), (r_x, r_y))
-                    
-                    #Traca uma linha entre eles
-                    cv2.line(im_an, (c_x, c_y), (r_x,r_y), [0, 0, 0], 2)
+                    color_rgba = [255, 0, 0, 1]
+    
+                color_bgr = [int(color_rgba[2]),
+                             int(color_rgba[1]),
+                             int(color_rgba[0])]
+                
+                #Desenha o contorno da celula                
+                cv2.drawContours(im_an, cel.componentes, -1, color_bgr, 1)
+                cv2.drawContours(im_an, cel.buracos, -1, color_bgr, 1)
+                
+                #Desenha o preenchimento da celula, que sera transparente                
+                cv2.drawContours(im_alpha, cel.componentes, -1, color_bgr, -1)
+                cv2.drawContours(im_alpha, cel.buracos, -1, [0, 0, 0], -1)
 
         if analise:
+            #Sobrepoe a imagem dos preenchimentos das celulas com transparencia
+            im_alpha_g = cv2.cvtColor(im_alpha, cv2.cv.CV_BGR2GRAY) #tons de cinza
+            t, mask = cv2.threshold(im_alpha_g, 0, 255, cv2.THRESH_BINARY_INV) #apenas a regiao que nao tem celulas
+            mask = cv2.cvtColor(mask, cv2.cv.CV_GRAY2BGR)
+            im_alpha = im_alpha + im_an*mask*255  #copia a regiao que nao tem celulas
+            #para a imagem a ser sobreposta com transparencia, dessa maneira
+            #essa regiao recebe a soma ponderada de duas cores iguais e permanece inafetada
+            im_an = cv2.addWeighted(im_an, 0.7, im_alpha, 0.3, 0) #adiciona com transparencia            
+        
             mostra_imagens([im_an], "Regioes Correspondentes")
                    
         return dif_acc
@@ -301,7 +312,7 @@ class Base:
             pickle.dump(self, f)
             f.close()
       
-         
+
 import pickle
 with open("anotacoes.pkl", "rb") as f:
     base = pickle.load(f)
