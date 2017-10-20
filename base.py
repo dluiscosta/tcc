@@ -211,26 +211,29 @@ class Patch:
         dif_acc = 0
         for c in self.celulas: #para cada celula anotada
             cel = c #atribue na variavel global para ser acessado pela funcao
-            
-            #procura a regiao (1 contorno externo = 1 regiao) que mais se assemelha a celula
-            reg = min(range(0, len(contours)), key=diferenca)
-            
-            #uma celula nao pode gerar mais penalidade que a sua area
-            dif = diferenca(reg)
             area = cel.get_area()
-            if dif > area:
-                reg = -1 #nenhuma regiao correspondente
-                dif_acc = dif_acc + area #acumula a area
+
+            if len(contours) > 0:
+                #procura a regiao (1 contorno externo = 1 regiao) que mais se assemelha a celula
+                reg = min(range(0, len(contours)), key=diferenca)
+                dif = diferenca(reg)
+                
+                #uma celula nao pode gerar mais penalidade que a sua area
+                if dif > area:
+                    reg = -1 #nenhuma regiao correspondente
+                    dif_acc = dif_acc + area #acumula a area
+                else:
+                    dif_acc = dif_acc + dif #acumula a diferenca
             else:
-                dif_acc = dif_acc + dif #acumula a diferenca
-        
+                dif_acc = dif_acc + area #acumula a area
+                
             if analise:
                 color_rgba = None
                 if reg != -1: #se ha regiao correspondente
                     import matplotlib.cm as cm
                     color_rgba = cm.winter(1 - float(dif)/float(area), 1, True)
                 else:
-                    color_rgba = [255, 0, 0, 1]
+                    color_rgba = [255, 0, 0]
     
                 color_bgr = [int(color_rgba[2]),
                              int(color_rgba[1]),
