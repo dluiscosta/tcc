@@ -161,7 +161,7 @@ def limiarizacao_divergencia_fuzzy(imagem, mascara=None, c=float(1)/(255 - 0),
         mostra_imagens([segmentos, segmentos_div_2], "Imagens limiarizadas",
                        ["Limiar otimo", "Metade do limiar otimo"])
         
-    return (segmentos, segmentos_div_2)
+    return (melhor_limiar, segmentos, segmentos_div_2)
     #----- /Fuzzy Divergence -----
 
 #Parser de parametros do script.
