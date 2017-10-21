@@ -19,30 +19,32 @@ notas_norm = np.swapaxes(notas_norm_swap, 0, 2) #inverte a ordem das dimensoes d
 
 #Parametros que serao testados
 cs = 1/np.array(range(1, 256, 30) + [255], dtype=float)
-gammas = range(1, 50, 5) + range(51, 200, 20)
-cores = (0, 1, 2, 3)
+gammas = range(1, 50, 5) + range(51, 260, 20)
+cores = range(cores)
 
 #Carrega as imagens
 import base
 ims = base.base.get_imagens(lambda im:im.lamina is not None and im.get_patch().celulas is not None)
 patchs = map(lambda im: im.get_patch(), ims)
-patchs_ims = map(lambda im: im.get_imagem(), patchs)
+patchs_ims = map(lambda pt: pt.get_imagem(), patchs)
 
-#Computa as imagens em cada cor
-ims_cor = ([patchs_ims[:][:,:,cor] for cor in cores[:-1]] +
+#Computa as imagens em cada
+ims_cor = ([[patch_im[:,:,cor] for patch_im in patchs_ims] for cor in cores[:-1]] + 
            [map(lambda im: cv2.cvtColor(im, cv2.cv.CV_BGR2GRAY), patchs_ims)])
 
 #Calcula a media de desempenho da limiarizacao por divergencia fuzzy para cada (cor, c, gamma)
 from limiarizacao_divergencia_fuzzy import limiarizacao_divergencia_fuzzy as ldf
 def ldf_mean(cor, c, gamma):
     #Computa os limiares retornados pela ldf (com c e gamma), para cada imagem
-    limiares_ldf = [ldf(im, c=c, gamma=gamma)[0] for im in ims_cor[c]]
+    limiares_ldf = [ldf(im, c=c, gamma=gamma)[0] for im in ims_cor[int(c)]]
     #Consulta a nota da limiarizacao pelo limiar computado, para cada imagem, e tira a media
-    nota_media = np.mean([notas_norm[limiares_ldf[im_idx], c, im_idx] for im_idx in range(imagens)])
-    print (cor, c, gamma, nota_media)
-    return nota_media
+    nota_media = np.mean([notas_norm[limiares_ldf[im_idx], cor, im_idx] for im_idx in range(imagens)]) #mesmo limiar
+    nota_media_div2 = np.mean([notas_norm[int(limiares_ldf[im_idx]/2), cor, im_idx] for im_idx in range(imagens)]) #metade limiar
+    
+    print (cor, c, gamma, nota_media, nota_media_div2)
+    return (nota_media, nota_media_div2)
 
-notas_ldf = map(lambda ccg: ldf_mean(*ccg), [(cor, c, g) for cor in cores for c in cs for g in gammas])
+notas_ldf = [[[ldf_mean(cor, c, g) for g in gammas] for c in cs] for cor in cores]
 
 #Salva os resultados
 with open("experimentos//fuzzy01.pkl", "wb") as f:
