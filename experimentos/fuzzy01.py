@@ -17,10 +17,10 @@ notas_norm_swap = map(lambda v: v.astype(float)/float(max([np.max(v), 1])), nota
 notas_norm_swap = 1 - np.array(notas_norm_swap)
 notas_norm = np.swapaxes(notas_norm_swap, 0, 2) #inverte a ordem das dimensoes de limiares e imagens
 
-#Parametros que serao testados
-cs = 1/np.array(range(1, 256, 30) + [255], dtype=float)
-gammas = range(1, 50, 5) + range(51, 260, 20)
+#Parametros que serao testados, com os eixos nesta ordem
 cores = range(cores)
+cs = np.linspace(start=1/float(256), stop=5, num=20)
+gammas = np.linspace(start=1, stop=400, num=30)
 
 #Carrega as imagens
 import base
@@ -36,7 +36,7 @@ ims_cor = ([[patch_im[:,:,cor] for patch_im in patchs_ims] for cor in cores[:-1]
 from limiarizacao_divergencia_fuzzy import limiarizacao_divergencia_fuzzy as ldf
 def ldf_mean(cor, c, gamma):
     #Computa os limiares retornados pela ldf (com c e gamma), para cada imagem
-    limiares_ldf = [ldf(im, c=c, gamma=gamma)[0] for im in ims_cor[int(c)]]
+    limiares_ldf = [ldf(im, c=c, gamma=gamma)[0] for im in ims_cor[cor]]
     #Consulta a nota da limiarizacao pelo limiar computado, para cada imagem, e tira a media
     nota_media = np.mean([notas_norm[limiares_ldf[im_idx], cor, im_idx] for im_idx in range(imagens)]) #mesmo limiar
     nota_media_div2 = np.mean([notas_norm[int(limiares_ldf[im_idx]/2), cor, im_idx] for im_idx in range(imagens)]) #metade limiar
@@ -48,5 +48,6 @@ notas_ldf = [[[ldf_mean(cor, c, g) for g in gammas] for c in cs] for cor in core
 
 #Salva os resultados
 with open("experimentos//fuzzy01.pkl", "wb") as f:
-    pickle.dump(notas_ldf, f)
+    parametros = (cores, cs, gammas)
+    pickle.dump((parametros, notas_ldf), f)
     f.close()
