@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-with open("experimentos//fuzzy01_02.pkl", "rb") as f:
+with open("experimentos//fuzzy01.pkl", "rb") as f:
     parametros, notas = pickle.load(f)
     f.close()
     
