@@ -190,7 +190,7 @@ class Patch:
                    for i in idxs if hierarquia[0,i,3] == -1] #para cada pai
             
         #Compara uma celula com uma regiao
-        im1, im2 = np.zeros((2,) + shape_patch, dtype="uint8") #gera duas imagens pretas para comparacao
+        im1, im2 = np.zeros((2,) + shape_patch, dtype=np.uint8) #gera duas imagens pretas para comparacao
         def compara(celula, regiao):
             #Desenha a celula na primeira imagem
             cv2.drawContours(im1, cel.componentes, -1, [255], -1) #preenchimento
@@ -222,7 +222,7 @@ class Patch:
     
         if analise:
             #Inicia uma imagem branca
-            im_an = np.zeros(shape_patch + (3,), dtype="uint8")
+            im_an = np.zeros(shape_patch + (3,), dtype=np.uint8)
             im_an[:,:,:] = 255 
             
             #Desenha as regioes segmentadas em cinza
@@ -230,16 +230,15 @@ class Patch:
             cv2.drawContours(im_an, contornos, -1, [200, 200, 200], 2)
             
             #Prepara uma imagem que sera sobreposta com transparencia
-            im_alpha = np.zeros(shape_patch + (3,), dtype="uint8")
+            im_alpha = np.zeros(shape_patch + (3,), dtype=np.uint8)
             
             #Desenha as celulas
             import matplotlib.cm as cm
-            for i in len(self.celulas): #para cada celula
-                cel = self.celulas[i]
-                
+            for i,cel in enumerate(self.celulas): #para cada celula
+            
                 #Mapeia a menor diferenca para cores
-                cor_rgba = [cm.winter(1 - dist, 1, True) for dist in min_diffs]
-                cor_bgr = cor_rgba[2::-1]
+                cor_rgba = cm.winter(1 - min_diffs[i], 1, True)
+                cor_bgr = map(lambda c: int(c), list(cor_rgba[2::-1]))
                 
                 #Desenha o contorno da celula                
                 cv2.drawContours(im_an, cel.componentes, -1, cor_bgr, 1)
@@ -261,7 +260,7 @@ class Patch:
             mostra_imagens([im_an], "Similaridade de regiao encontrada para cada celula")
                    
         #Retorna a media de menores diferencas entre todas as celulas
-        return np.mean(min_diffs)
+        return np.mean(min_diffs) if len(min_diffs) > 0 else 1
                         
 class Imagem:
     def __init__(self, indice):
@@ -303,6 +302,7 @@ class Base:
                 y = int(raw_input("Canto y: "))
                 w = int(raw_input("Largura: "))
                 h = int(raw_input("Altura: "))
+
                 self.imagens[i-1].lamina = Lamina(canto = [x,y], shape = [w, h])
                 return
         print "Todas as laminas foram anotadas"
