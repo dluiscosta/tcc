@@ -70,7 +70,7 @@ class Lamina:
         x, y = patch.canto
         return (self.esta_dentro((x, y)) and self.esta_dentro((x + w, y)) and 
                 self.esta_dentro((x + w, y + h)) and self.esta_dentro((x, y + h)))
-    
+            
     def avaliar_lamina(self, tentativa, analise=False, indice=None):
         im = self.get_imagem()
         
@@ -105,7 +105,15 @@ class Lamina:
             print "\n\n"
 
         return nota
-            
+         
+def distancia_jaccard(im1, im2):
+    #Calcula a distancia de Jaccard
+    interseccao = np.count_nonzero(cv2.bitwise_and(im1, im2))
+    uniao = np.count_nonzero(cv2.bitwise_or(im1, im2))    
+    jaccard_index = float(interseccao)/float(uniao) if uniao != 0 else 1
+
+    return 1 - jaccard_index
+    
 class Patch:
     def __init__(self, canto = (None, None), indice = None):
         self.canto = canto #(x, y) canto superior esquerdo
@@ -157,109 +165,103 @@ class Patch:
                         ind = ind + 1
         self.celulas = cels
         
-    def avaliar_patch(self, tentativa, analise = False):
+    #Calcula a distancia de Jaccard de uma predicao (imagem binaria) para com o padrao-ouro
+    def avaliacao_distancia_jaccard(self, predicao):
+        #Gera a imagem do padrao-ouro com base nos contornos anotados das celulas
+        ouro = np.zeros(shape_patch, dtype=np.uint8)
+        for celula in self.celulas:
+            cv2.drawContours(ouro, celula.componentes, -1, [255], -1) #preenchimento
+            cv2.drawContours(ouro, celula.componentes, -1, [255], 2) #borda
+            cv2.drawContours(ouro, celula.buracos, -1, [0], -1) #buracos
+
+        return distancia_jaccard(ouro, predicao)
+            
+    #Para cada celula anotada, escolhe por forca bruta a regiao da predicao que mais se aproxima dela.
+    #Retorna o somatorio das diferencas entre cada celula e a sua regiao correspondente.
+    def avaliacao_forca_bruta(self, predicao, diferenca, analise = False):
         if self.celulas is None:
             raise Exception("As celulas nao foram anotadas!")
         
-        contours, hierarchy = tentativa
-                
-        cel = None
-        inf = shape_patch[0]*shape_patch[1] #virtualmente infinito
-        im1, im2 = np.zeros((2,) + shape_patch, dtype="uint8") #gera duas imagens pretas para comparacao
-        def diferenca(idx_cont):     
-            if hierarchy[0,idx_cont,3] != -1: #eh um buraco
-                return inf
+        contornos, hierarquia = predicao
+        
+        #Separa as regioes da predicao
+        idxs = range(len(contornos))
+        regioes = [(contornos[i], [contornos[j] for j in idxs if hierarquia[0,j,3] == i]) #seleciona ele e seus filhos
+                   for i in idxs if hierarquia[0,i,3] == -1] #para cada pai
             
+        #Compara uma celula com uma regiao
+        im1, im2 = np.zeros((2,) + shape_patch, dtype="uint8") #gera duas imagens pretas para comparacao
+        def compara(celula, regiao):
             #Desenha a celula na primeira imagem
             cv2.drawContours(im1, cel.componentes, -1, [255], -1) #preenchimento
             cv2.drawContours(im1, cel.componentes, -1, [255], 2) #borda
             cv2.drawContours(im1, cel.buracos, -1, [0], -1) #buracos
-            
+        
             #Desenha a regiao na segunda imagem
-            cv2.drawContours(im2, contours, idx_cont, [255], -1) #preenchimento
-            cv2.drawContours(im2, contours, idx_cont, [255], 2) #borda
-            if hierarchy[0,idx_cont,2] != -1: #ha filho(s) -> buraco(s)
-               idx_filho = hierarchy[0,idx_cont,2] #primeiro filho
-               cv2.drawContours(im2, contours, idx_filho, [0], -1)  
-               while hierarchy[0,idx_filho,0] != -1: #itera pelos outros filhos
-                   idx_filho = hierarchy[0,idx_filho,0]
-                   cv2.drawContours(im2, contours, idx_filho, [0], -1)  
+            componente, buracos = regiao
+            cv2.drawContours(im2, [componente], -1, [255], -1) #preenchimento
+            cv2.drawContours(im2, [componente], -1, [255], 2) #borda
+            cv2.drawContours(im2, buracos, -1, [0], -1) #buracos
             
-            #Calcula a area da diferenca entre as regioes (XOR nos pixels)
-            dif = np.count_nonzero(cv2.bitwise_xor(im1,im2))
+            #Calcula a diferenca com a funcao fornecida
+            dif = diferenca(im1, im2)
             
             #Restaura as imagens pretas
             cv2.drawContours(im1, cel.componentes, -1, [0], -1) #preenchimento
             cv2.drawContours(im1, cel.componentes, -1, [0], 2) #borda
-            cv2.drawContours(im2, contours, idx_cont, [0], -1) #preenchimento
-            cv2.drawContours(im2, contours, idx_cont, [0], 2) #borda
+            cv2.drawContours(im2, [componente], -1, [0], -1) #preenchimento
+            cv2.drawContours(im2, [componente], -1, [0], 2) #borda
 
             return dif
         
-        im_an = None
-        im_alpha = None
+        #Compara as celulas com cada regiao e guarda a menor diferenca
+        min_diffs = map(lambda cel: 
+                            min(map(lambda reg: compara(cel, reg), regioes)
+                            + [1]), #caso nao haja regioes na predicao
+                        self.celulas)
+    
         if analise:
-            #Desenha as regioes segmentadas em cinza
+            #Inicia uma imagem branca
             im_an = np.zeros(shape_patch + (3,), dtype="uint8")
             im_an[:,:,:] = 255 
-            cv2.drawContours(im_an, contours, -1, [200, 200, 200], -1)
-            cv2.drawContours(im_an, contours, -1, [200, 200, 200], 2)
+            
+            #Desenha as regioes segmentadas em cinza
+            cv2.drawContours(im_an, contornos, -1, [200, 200, 200], -1)
+            cv2.drawContours(im_an, contornos, -1, [200, 200, 200], 2)
             
             #Prepara uma imagem que sera sobreposta com transparencia
             im_alpha = np.zeros(shape_patch + (3,), dtype="uint8")
             
-        dif_acc = 0
-        for c in self.celulas: #para cada celula anotada
-            cel = c #atribue na variavel global para ser acessado pela funcao
-            area = cel.get_area()
-
-            if len(contours) > 0:
-                #procura a regiao (1 contorno externo = 1 regiao) que mais se assemelha a celula
-                reg = min(range(0, len(contours)), key=diferenca)
-                dif = diferenca(reg)
+            #Desenha as celulas
+            import matplotlib.cm as cm
+            for i in len(self.celulas): #para cada celula
+                cel = self.celulas[i]
                 
-                #uma celula nao pode gerar mais penalidade que a sua area
-                if dif > area:
-                    reg = -1 #nenhuma regiao correspondente
-                    dif_acc = dif_acc + area #acumula a area
-                else:
-                    dif_acc = dif_acc + dif #acumula a diferenca
-            else:
-                dif_acc = dif_acc + area #acumula a area
-                
-            if analise:
-                color_rgba = None
-                if reg != -1: #se ha regiao correspondente
-                    import matplotlib.cm as cm
-                    color_rgba = cm.winter(1 - float(dif)/float(area), 1, True)
-                else:
-                    color_rgba = [255, 0, 0]
-    
-                color_bgr = [int(color_rgba[2]),
-                             int(color_rgba[1]),
-                             int(color_rgba[0])]
+                #Mapeia a menor diferenca para cores
+                cor_rgba = [cm.winter(1 - dist, 1, True) for dist in min_diffs]
+                cor_bgr = cor_rgba[2::-1]
                 
                 #Desenha o contorno da celula                
-                cv2.drawContours(im_an, cel.componentes, -1, color_bgr, 1)
-                cv2.drawContours(im_an, cel.buracos, -1, color_bgr, 1)
+                cv2.drawContours(im_an, cel.componentes, -1, cor_bgr, 1)
+                cv2.drawContours(im_an, cel.buracos, -1, cor_bgr, 1)
                 
                 #Desenha o preenchimento da celula, que sera transparente                
-                cv2.drawContours(im_alpha, cel.componentes, -1, color_bgr, -1)
+                cv2.drawContours(im_alpha, cel.componentes, -1, cor_bgr, -1)
                 cv2.drawContours(im_alpha, cel.buracos, -1, [0, 0, 0], -1)
 
-        if analise:
-            #Sobrepoe a imagem dos preenchimentos das celulas com transparencia
+            #Ajusta a imagem a ser sobreposta com transparencia de maneira a nao afetar o restante da imagem (areas cem celulas)
             im_alpha_g = cv2.cvtColor(im_alpha, cv2.cv.CV_BGR2GRAY) #tons de cinza
             t, mask = cv2.threshold(im_alpha_g, 0, 255, cv2.THRESH_BINARY_INV) #apenas a regiao que nao tem celulas
             mask = cv2.cvtColor(mask, cv2.cv.CV_GRAY2BGR)
-            im_alpha = im_alpha + im_an*mask*255  #copia a regiao que nao tem celulas
-            #para a imagem a ser sobreposta com transparencia, dessa maneira
-            #essa regiao recebe a soma ponderada de duas cores iguais e permanece inafetada
+            im_alpha = im_alpha + im_an*mask*255  #copia da imagem com as regioes a area que nao tem celulas
+            
+            #Sobrepoe as imagens
             im_an = cv2.addWeighted(im_an, 0.7, im_alpha, 0.3, 0) #adiciona com transparencia            
         
-            mostra_imagens([im_an], "Regioes Correspondentes")
+            mostra_imagens([im_an], "Similaridade de regiao encontrada para cada celula")
                    
-        return dif_acc
+        #Retorna a media de menores diferencas entre todas as celulas
+        return np.mean(min_diffs)
                         
 class Imagem:
     def __init__(self, indice):
@@ -301,7 +303,7 @@ class Base:
                 y = int(raw_input("Canto y: "))
                 w = int(raw_input("Largura: "))
                 h = int(raw_input("Altura: "))
-                self.imagens[i].lamina = Lamina(i, canto = (x,y), shape = (w, h))
+                self.imagens[i-1].lamina = Lamina(canto = [x,y], shape = [w, h])
                 return
         print "Todas as laminas foram anotadas"
         return
