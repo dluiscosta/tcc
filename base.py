@@ -308,7 +308,7 @@ class Base:
         print "Todas as laminas foram anotadas"
         return
     
-    def get_imagens(self, condicoes):
+    def get_imagens(self, condicoes=(lambda x: True)):
         return [x for x in self.imagens if condicoes(x)] 
         
     def salvar(self):
