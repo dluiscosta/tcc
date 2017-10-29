@@ -38,7 +38,12 @@ class Celula:
             #Conta os pixels do foreground
             self.area = np.count_nonzero(im)
             return self.area            
-            
+    
+    def na_borda(self):
+        coords = self.componentes[0]
+        a = (coords >= 498)
+        b = (coords <= 1)
+        return (a.sum() + b.sum()) > 0
         
 class Lamina:
     #Recebe opcionalmente como parametros as coordenadas do canto superior 
@@ -308,7 +313,7 @@ class Base:
         print "Todas as laminas foram anotadas"
         return
     
-    def get_imagens(self, condicoes):
+    def get_imagens(self, condicoes=(lambda x: True)):
         return [x for x in self.imagens if condicoes(x)] 
         
     def salvar(self):
