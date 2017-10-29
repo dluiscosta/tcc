@@ -183,7 +183,7 @@ class Patch:
             
     #Para cada celula anotada, escolhe por forca bruta a regiao da predicao que mais se aproxima dela.
     #Retorna o somatorio das diferencas entre cada celula e a sua regiao correspondente.
-    def avaliacao_forca_bruta(self, predicao, diferenca, analise = False):
+    def avaliacao_forca_bruta(self, predicao, diferenca, ignora_borda = False, analise = False):
         if self.celulas is None:
             raise Exception("As celulas nao foram anotadas!")
         
@@ -198,9 +198,9 @@ class Patch:
         im1, im2 = np.zeros((2,) + shape_patch, dtype=np.uint8) #gera duas imagens pretas para comparacao
         def compara(celula, regiao):
             #Desenha a celula na primeira imagem
-            cv2.drawContours(im1, cel.componentes, -1, [255], -1) #preenchimento
-            cv2.drawContours(im1, cel.componentes, -1, [255], 2) #borda
-            cv2.drawContours(im1, cel.buracos, -1, [0], -1) #buracos
+            cv2.drawContours(im1, celula.componentes, -1, [255], -1) #preenchimento
+            cv2.drawContours(im1, celula.componentes, -1, [255], 2) #borda
+            cv2.drawContours(im1, celula.buracos, -1, [0], -1) #buracos
         
             #Desenha a regiao na segunda imagem
             componente, buracos = regiao
@@ -212,19 +212,23 @@ class Patch:
             dif = diferenca(im1, im2)
             
             #Restaura as imagens pretas
-            cv2.drawContours(im1, cel.componentes, -1, [0], -1) #preenchimento
-            cv2.drawContours(im1, cel.componentes, -1, [0], 2) #borda
+            cv2.drawContours(im1, celula.componentes, -1, [0], -1) #preenchimento
+            cv2.drawContours(im1, celula.componentes, -1, [0], 2) #borda
             cv2.drawContours(im2, [componente], -1, [0], -1) #preenchimento
             cv2.drawContours(im2, [componente], -1, [0], 2) #borda
 
             return dif
         
-        #Compara as celulas com cada regiao e guarda a menor diferenca
+        #Celulas consideradas.
+        #Se especificado, ignora as celulas que tocam a borda do patch.
+        celulas = [cel for cel in self.celulas if (not ignora_borda or not cel.na_borda())]
+        
+        #Compara as celulas com cada regiao e guarda a menor diferenca.
         min_diffs = map(lambda cel: 
                             min(map(lambda reg: compara(cel, reg), regioes)
                             + [1]), #caso nao haja regioes na predicao
-                        self.celulas)
-    
+                        celulas)
+
         if analise:
             #Inicia uma imagem branca
             im_an = np.zeros(shape_patch + (3,), dtype=np.uint8)
@@ -239,7 +243,7 @@ class Patch:
             
             #Desenha as celulas
             import matplotlib.cm as cm
-            for i,cel in enumerate(self.celulas): #para cada celula
+            for i,cel in enumerate(celulas): #para cada celula
             
                 #Mapeia a menor diferenca para cores
                 cor_rgba = cm.winter(1 - min_diffs[i], 1, True)
