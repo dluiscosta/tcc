@@ -1,5 +1,5 @@
 #Para as imagens com as celulas anotadas, apos aplicacao do filtro de mediana (tamanho kernel variavel), 
-#checa no patch a qualidade da segmentacao por limiarizacao nos limiares 146(que o de maior indice de Jaccard medio) +- 20 
+#checa no patch a qualidade da segmentacao por limiarizacao nos limiares 146(que o de maior indice de Jaccard medio) +- 5 
 #sobre o canal verde, apos extracao de regioes com variacao nos kerneis das aberturas morfologicas.
 
 import base
@@ -11,15 +11,16 @@ from extrair_regioes import extrair_regioes
 
 #Parametros variaveis
 kernels_filt_med = [5, 7, 9] #tamanhos do kernel do filtro de mediana 
-limiares = range(146-5, 146+5+1)
+limiares = range(146-10, 146+10+1)
 imagens = base.base.get_imagens(lambda im:im.lamina is not None and im.get_patch().celulas is not None)
 
 #Define os kerneis de abertura (variavel)
 morphs = [cv2.MORPH_CROSS, cv2.MORPH_RECT, cv2.MORPH_ELLIPSE]
 kernels_ext = [None] + [cv2.getStructuringElement(morph, (ksize, ksize)) 
                for ksize in range(3, 8, 2) for morph in morphs]
-kernels_int = [None] + [cv2.getStructuringElement(morph, (ksize, ksize)) 
-               for ksize in range(3, 6, 2) for morph in morphs]
+kernels_int = [None]
+# + [cv2.getStructuringElement(morph, (ksize, ksize)) 
+#               for ksize in range(3, 6, 2) for morph in morphs]
 #areas_min = range(500, 1000, 100)
 
 notas = np.zeros((len(kernels_filt_med),
@@ -52,6 +53,6 @@ for i, imagem in enumerate(imagens): #para cada imagem
                        
                     print(kf,ke,ki,limiar,imagem.indice,notas[kf,ke,ki,l,i])
             
-    with open("experimentos//extrair_regioes01.pkl", "wb") as f:
+    with open("experimentos//extrair_regioes02.pkl", "wb") as f:
         pickle.dump(notas, f)
         f.close()

@@ -4,6 +4,9 @@ from exibir_imagens import mostra_imagens
 
 def limiarizacao_divergencia_fuzzy(imagem, mascara=None, c=float(1)/(255 - 0),
                                    gamma=1, analise=False):
+    #Usa apenas o canal azul
+    imagem = imagem[:,:,0]
+    
     if analise:
         from matplotlib import pyplot as plt
         print "- Limiarizacao por divergencia fuzzy -"
@@ -163,37 +166,3 @@ def limiarizacao_divergencia_fuzzy(imagem, mascara=None, c=float(1)/(255 - 0),
         
     return (melhor_limiar, segmentos, segmentos_div_2)
     #----- /Fuzzy Divergence -----
-
-#Parser de parametros do script.
-import argparse
-parser = argparse.ArgumentParser(description="Limiarizacao por divergencia fuzzy.")
-parser.add_argument("-i", "--input", help="Nome do arquivo da imagem de entrada.",
-                    action="store")
-parser.add_argument("-m", "--mask", 
-                    help="Nome do arquivo da imagem binaria de mascara.", 
-                    action="store")
-parser.add_argument("-s", "--salvar", help="Nome do arquivo da imagem de saida.", 
-                    action="store")
-parser.add_argument("-a", "--analise", help="Modo de analise.",
-                    action="store_true")
-args = parser.parse_args()
-
-#Abre a imagem de entrada e considera apenas o canal verde
-input_filename = args.input
-if input_filename is not None:
-    imagem = cv2.imread(input_filename, cv2.IMREAD_COLOR)[:,:,1]
-    
-    if args.mask != None:
-        mascara = cv2.imread(args.mask, cv2.IMREAD_GRAYSCALE)
-    else: 
-        mascara = None
-            
-    seg_1, seg_2 = limiarizacao_divergencia_fuzzy(imagem, mascara, 
-                                                  gamma=30,
-                                                  c=1,
-                                                  analise=args.analise)
-    
-    #Se especificado, salva a imagem de saida
-    if args.salvar != None:
-        cv2.imwrite(args.salvar, seg_1)
-        cv2.imwrite(args.salvar[:-4] + "_2" + args.salvar[-4:], seg_2)
