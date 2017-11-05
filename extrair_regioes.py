@@ -62,7 +62,6 @@ def extrair_regioes(imagem, kernel_ext=None, kernel_int=None, min_area=None, ana
             cv2.RETR_CCOMP, #associa contornos de componentes com contornos de buracos
             cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno                   
     
-    
     #Separa as regioes (cada regiao = 1 contorno externo + n contornos internos )
     regioes = [] #lista de regioes
     for c, contorno in enumerate(contours):
@@ -82,55 +81,23 @@ def extrair_regioes(imagem, kernel_ext=None, kernel_int=None, min_area=None, ana
     #Remove as regioes inferiores a min_area
     if min_area is not None:
         from extracao_caracteristicas import area
-        im_area = np.zeros(imagem.shape, dtype=np.uint8)
+        regioes = [r for r in regioes if area(r) >= min_area]
         
-        #Desenha as regioes superiores a min_area
-        for c,cont in enumerate(contours):
-            if hierarchy[0,c,3] == -1: #nao tem pai -> eh componente
-            
-                #Concatena o contorno do componente e dos buracos
-                conts = [cont]
-                if hierarchy[0,c,2] != -1: #ha filho(s) -> buracos
-                    c_filho = hierarchy[0,c,2] #primeiro filho
-                    conts.append(contours[c_filho])
-                    while hierarchy[0,c_filho,0] != -1: #itera pelos outros filhos
-                        c_filho = hierarchy[0,c_filho,0]
-                        conts.append(contours[c_filho])
-                        
-                #Desenha se a regiao for superior a min_area
-                if area(conts) >= min_area: #checa a area
-                    cv2.drawContours(im_area, conts[:1], -1, [255], -1)
-                    cv2.drawContours(im_area, conts[:1], -1, [255], 1)
-                    cv2.drawContours(im_area, conts[1:], -1, [0], -1)
-                    cv2.drawContours(im_area, conts[1:], -1, [0], 1)
-                
         if analise:
-            mostra_imagens([im_area], "Apenas regioes superiores a area minima")                
-                
-        #Extrai os contornos atualizados
-        contours, hierarchy = cv2.findContours(im_area, 
-            cv2.RETR_CCOMP, #associa contornos de componentes com contornos de buracos
-            cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno                                                               
-                                               
-    if original is not None:
+            #Desenha apenas as regioes superiores a min_area
+            im_area = np.zeros(imagem.shape, dtype=np.uint8)
+            for regiao in regioes:
+                cv2.drawContours(im_area, regiao[:1], -1, [255], -1)
+                cv2.drawContours(im_area, regiao[:1], -1, [255], 1)
+                cv2.drawContours(im_area, regiao[1:], -1, [0], -1)
+                cv2.drawContours(im_area, regiao[1:], -1, [0], 1)
+            mostra_imagens([im_area], "Apenas regioes superiores a area minima")   
+
+    if original is not None and analise:
         #Desenha os contornos obtidos sobre a imagem original
         im_cont = np.copy(original)
-        for c, contorno in enumerate(contours):
-            cor = cor_aleatoria()
-        
-            #So desenha o contorno se ele nao for filho de outro contorno.
-            #Nesse caso, o contorno sera desenhado na vez do seu pai, 
-            #com a mesma cor que ele
-            if hierarchy[0,c,3] == -1: #nao tem pai
-                cv2.drawContours(im_cont, [contorno], -1, cor, 2)   
-                #Se houverem filhos, os desenha.
-                if hierarchy[0,c,2] != -1: #ha filho(s)
-                    c_filho = hierarchy[0,c,2] #primeiro filho
-                    cv2.drawContours(im_cont, contours, c_filho, cor, 2)  
-                    while hierarchy[0,c_filho,0] != -1: #itera pelos outros filhos
-                        c_filho = hierarchy[0,c_filho,0]
-                        cv2.drawContours(im_cont, contours, c_filho, cor, 2)  
-        if analise:
-            mostra_imagens([im_cont], "Regioes encontradas sobre a imagem original")
+        for regiao in regioes:
+            cv2.drawContours(im_cont, regiao, -1, cor_aleatoria(), 2)
+        mostra_imagens([im_cont], "Regioes encontradas sobre a imagem original")
        
     return regioes
