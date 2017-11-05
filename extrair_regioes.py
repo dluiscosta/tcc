@@ -1,6 +1,5 @@
 import cv2
 import cv2.cv
-import argparse
 from exibir_imagens import mostra_imagens
 import numpy as np
 import random as rd
@@ -97,45 +96,25 @@ def extrair_regioes(imagem, kernel_ext=None, kernel_int=None, min_area=None, ana
             cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno                   
     
                     
-        if original is not None:
-            #Desenha os contornos obtidos sobre a imagem original
-            im_cont = np.copy(original)
-            for c, contorno in enumerate(contours):
-                cor = cor_aleatoria()
+    if original is not None:
+        #Desenha os contornos obtidos sobre a imagem original
+        im_cont = np.copy(original)
+        for c, contorno in enumerate(contours):
+            cor = cor_aleatoria()
         
-                #So desenha o contorno se ele nao for filho de outro contorno.
-                #Nesse caso, o contorno sera desenhado na vez do seu pai, 
-                #com a mesma cor que ele
-                if hierarchy[0,c,3] == -1: #nao tem pai
-                    cv2.drawContours(im_cont, [contorno], -1, cor, 2)   
-                    #Se houverem filhos, os desenha.
-                    if hierarchy[0,c,2] != -1: #ha filho(s)
-                        c_filho = hierarchy[0,c,2] #primeiro filho
+            #So desenha o contorno se ele nao for filho de outro contorno.
+            #Nesse caso, o contorno sera desenhado na vez do seu pai, 
+            #com a mesma cor que ele
+            if hierarchy[0,c,3] == -1: #nao tem pai
+                cv2.drawContours(im_cont, [contorno], -1, cor, 2)   
+                #Se houverem filhos, os desenha.
+                if hierarchy[0,c,2] != -1: #ha filho(s)
+                    c_filho = hierarchy[0,c,2] #primeiro filho
+                    cv2.drawContours(im_cont, contours, c_filho, cor, 2)  
+                    while hierarchy[0,c_filho,0] != -1: #itera pelos outros filhos
+                        c_filho = hierarchy[0,c_filho,0]
                         cv2.drawContours(im_cont, contours, c_filho, cor, 2)  
-                        while hierarchy[0,c_filho,0] != -1: #itera pelos outros filhos
-                            c_filho = hierarchy[0,c_filho,0]
-                            cv2.drawContours(im_cont, contours, c_filho, cor, 2)  
-            if analise:
-                mostra_imagens([im_cont], "Regioes encontradas sobre a imagem original")
+        if analise:
+            mostra_imagens([im_cont], "Regioes encontradas sobre a imagem original")
        
     return contours, hierarchy
-                        
-#Parser de parametros do script
-parser = argparse.ArgumentParser(description="Extracao de regioes conexas. As regioes sao as brancas e o background preto.")
-parser.add_argument("-i", "--input", help="Nome do arquivo da imagem de entrada, uma imagem binaria.", action="store")
-parser.add_argument("-s", "--salvar", help="Contornos e hierarquia em um arquivo pickle.", action="store")
-parser.add_argument("-a", "--analise", help="Modo de analise.", action="store_true")
-args = parser.parse_args()
-
-#Abre a imagem binaria de entrada
-input_filename = args.input
-if input_filename is not None:
-    imagem = cv2.imread(input_filename, cv2.IMREAD_GRAYSCALE)
-    
-    contours, hierarchy = extrair_regioes(imagem, args.analise)
-    
-    #Se especificado, salva os contornos e a hierarquia
-    if args.salvar != None:
-        import pickle
-        pickle.dump((contours, hierarchy), args.salvar)
-

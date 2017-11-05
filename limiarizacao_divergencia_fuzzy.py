@@ -3,10 +3,7 @@ import cv2.cv
 from exibir_imagens import mostra_imagens
 
 def limiarizacao_divergencia_fuzzy(imagem, mascara=None, c=float(1)/(255 - 0),
-                                   gamma=1, analise=False):
-    #Usa apenas o canal azul
-    imagem = imagem[:,:,0]
-    
+                                   gamma=1, analise=False):    
     if analise:
         from matplotlib import pyplot as plt
         print "- Limiarizacao por divergencia fuzzy -"

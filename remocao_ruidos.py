@@ -9,5 +9,6 @@ def filtro_mediana(imagem, size=5):
 def filtro_gaussiano(imagem, size=5):
     return cv2.GaussianBlur(imagem, (size, size), sigmaX=0)
 
-def remocao_ruidos(imagem):
+def remocao_ruidos(imagem, analise=False):
+    #Aplica o filtro de mediana com kernel de tamanho 9x9.
     return filtro_mediana(imagem, 9)
