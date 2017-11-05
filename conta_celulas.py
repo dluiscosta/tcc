@@ -6,10 +6,4 @@ def conta_celulas(imagem, analise=False):
     im_b = limiarizacao(im_f, im_l, analise=analise) #limiariza o interior da lamina
     regioes = er(im_b, analise=analise, original=imagem) #extrai regioes
     
-    contornos, hierarquia = regioes
-    
-    
-    
-    
-    
-    return None
+    return regioes

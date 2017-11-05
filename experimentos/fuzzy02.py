@@ -48,7 +48,12 @@ limiares = [[[[
             for c in cs]
             for cor_idx,cor in enumerate(cores)]
     
-
+#Salva os resultados
+with open("experimentos//fuzzy02.pkl", "wb") as f:
+    parametros = (cores, cs, gammas, [im.indice for im in ims])
+    pickle.dump((parametros, limiares), f)
+    f.close()
+    
 #Consulta a nota atribuida a segmentacao resultado do limiar do ldf e da metade
 
 def get_nota(cor_idx, i, l):

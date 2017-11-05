@@ -62,6 +62,23 @@ def extrair_regioes(imagem, kernel_ext=None, kernel_int=None, min_area=None, ana
             cv2.RETR_CCOMP, #associa contornos de componentes com contornos de buracos
             cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno                   
     
+    
+    #Separa as regioes (cada regiao = 1 contorno externo + n contornos internos )
+    regioes = [] #lista de regioes
+    for c, contorno in enumerate(contours):
+        #Monta uma regiao para cada contorno externo (primeiro nivel hierarquico)
+        if hierarchy[0,c,3] == -1: #nao tem pai -> eh externo
+            regiao = [contorno]
+            #Se houverem filhos, os inclue.
+            if hierarchy[0,c,2] != -1: #ha filho(s)
+                c_filho = hierarchy[0,c,2] #primeiro filho
+                regiao.append(contours[c_filho])
+                while hierarchy[0,c_filho,0] != -1: #itera pelos outros filhos
+                    c_filho = hierarchy[0,c_filho,0]
+                    regiao.append(contours[c_filho])
+            #Adiciona a regiao recem criada a lista de todas as regioes
+            regioes.append(regiao)
+                    
     #Remove as regioes inferiores a min_area
     if min_area is not None:
         from extracao_caracteristicas import area
@@ -93,9 +110,8 @@ def extrair_regioes(imagem, kernel_ext=None, kernel_int=None, min_area=None, ana
         #Extrai os contornos atualizados
         contours, hierarchy = cv2.findContours(im_area, 
             cv2.RETR_CCOMP, #associa contornos de componentes com contornos de buracos
-            cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno                   
-    
-                    
+            cv2.CHAIN_APPROX_NONE) #armazena todos os pontos no contorno                                                               
+                                               
     if original is not None:
         #Desenha os contornos obtidos sobre a imagem original
         im_cont = np.copy(original)
@@ -117,4 +133,4 @@ def extrair_regioes(imagem, kernel_ext=None, kernel_int=None, min_area=None, ana
         if analise:
             mostra_imagens([im_cont], "Regioes encontradas sobre a imagem original")
        
-    return contours, hierarchy
+    return regioes
