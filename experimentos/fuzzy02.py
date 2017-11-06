@@ -47,7 +47,8 @@ limiares = [[[[
             for gamma in gammas]
             for c in cs]
             for cor_idx,cor in enumerate(cores)]
-    
+limiares = np.array(limiares)
+
 #Salva os resultados
 with open("experimentos//fuzzy02.pkl", "wb") as f:
     parametros = (cores, cs, gammas, [im.indice for im in ims])
@@ -57,7 +58,6 @@ with open("experimentos//fuzzy02.pkl", "wb") as f:
 #Consulta a nota atribuida a segmentacao resultado do limiar do ldf e da metade
 
 def get_nota(cor_idx, i, l):
-    print (cor, i)
     if l < 70 or l > 240:
         return 1 #distancia maxima
     else:
@@ -70,7 +70,8 @@ notas_ldf = [[[[
             for g,gamma in enumerate(gammas)]
             for c_idx,c in enumerate(cs)]
             for cor_idx,cor in enumerate(cores)]
-    
+notas_ldf = np.array(notas_ldf)
+
 #Salva os resultados
 with open("experimentos//fuzzy02.pkl", "wb") as f:
     parametros = (cores, cs, gammas, [im.indice for im in ims])
