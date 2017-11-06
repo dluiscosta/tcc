@@ -1,6 +1,4 @@
 from modulos import *
-import extracao_caracteristicas as excar
-import numpy
 
 def conta_celulas(imagem, analise=False):
     im_l = do(imagem, analise=analise) #delimita a lamina
