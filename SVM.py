@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from sklearn import svm
+import pickle
+import numpy
 
-# usando arrays fakes -- precisa colocar as caracteristicas em array
-# X = np.array([[6.7,3.0,5.2,2.3], [6.3,2.5,5.0,1.9], [6.5,3.0,5.2,2.0], [6.2,3.4,5.4,2.3], [5.9,3.0,5.1,1.8]])
-# y = np.array([1, 1, 1, 2, 2]) -> classe a qual cada uma das amostras de X pertence
 
 def svm_cells(X, y):
-    svm_linear = svm.SVC
+    svm_linear = svm.SVC()
     svm_linear.fit(X, y)
 
     return svm_linear
@@ -14,4 +13,23 @@ def svm_cells(X, y):
 def svm_predict(svm_cells, sample):
     return svm_cells.predict(sample)
 
-# no caso do nosso, teremos que usar 2 SVMs onde a primeira classifica entre neutrófilo e não neutrófilo e a segunda entre monócito e não monócito, certo
+
+def load_regioes_anotadas(file_name_pk):
+    try:
+        regioes_anotadas = pickle.load(open(file_name_pk,'rb'))
+    except:
+        regioes_anotadas = []
+    print(regioes_anotadas)
+    X = []
+    y = []
+    for regiao in regioes_anotadas:
+        X.append(regiao['caracteristicas'])
+        y.append(regiao['classe'])
+    X = numpy.array(X)
+    y = numpy.array(y)
+    return X, y
+
+# X, y = load_regioes_anotadas('lalala')
+# svm = svm_cells(X, y)
+
+# print(svm_predict(svm, sample))
