@@ -4,7 +4,6 @@ from random import randint
 import cv2
 
 def anotar_regioes(numero_regioes):
-
     for i in range(0, numero_regioes):
         index_image = randint(1,129)
         imagem = cv2.imread('/home/nayara/Desktop/TCC/imagens2606/IMG_20170626_191737083_HDR.jpg',cv2.IMREAD_COLOR)
@@ -17,6 +16,8 @@ def anotar_regioes(numero_regioes):
         cv2.drawContours(imagem, regioes[index_region][0], -1, (0,255,0), 6)
         cv2.imshow('imagem', imagem)
 
+        regiao = Regiao(regioes[index_region])
+
         # 1 : 'n'eutrofilo
         # 2 : 'l'eucocito
         # 3 : outros
@@ -24,9 +25,12 @@ def anotar_regioes(numero_regioes):
 
         if k == 1114033:
             print('NEUTROFILO')
+            regiao.classe = 'n'
         elif k == 1114034:
             print('LEUCOCITO')
+            regiao.classe = 'l'
         elif k == 1114035:
             print('OUTRO')
+            regiao.classe = 'o'
         else:
             print("Nada")
