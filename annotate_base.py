@@ -17,6 +17,7 @@ def anotar_regioes(numero_regioes):
         cv2.imshow('imagem', imagem)
 
         regiao = Regiao(regioes[index_region])
+        regiao.extrai_caracteristicas()
 
         # 1 : 'n'eutrofilo
         # 2 : 'l'eucocito

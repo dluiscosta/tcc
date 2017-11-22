@@ -1,5 +1,6 @@
 import cv2
 import conta_celulas as cc
+from extracao_caracteristicas import extracao_caracteristicas
 
 class Regiao:
     def __init__(self, regiao):
@@ -11,7 +12,7 @@ class Regiao:
         return self.regiao[0]
 
     def extrai_caracteristicas(self):
-        pass
+        self.caracteristicas = extracao_caracteristicas(self.regiao, [i for i in range(0,11)])
 
     def draw_contorno(self, imagem):
         cv2.drawContours(imagem,self.regiao[0],-1,(0,255,0),3)
