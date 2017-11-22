@@ -16,3 +16,6 @@ class Regiao:
 
     def draw_contorno(self, imagem):
         cv2.drawContours(imagem,self.regiao[0],-1,(0,255,0),3)
+
+    def get_dict(self):
+        return {"classe": self.classe, "caracteristicas": self.caracteristicas}

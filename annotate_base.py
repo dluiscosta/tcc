@@ -2,11 +2,21 @@ from regiao import Regiao
 from conta_celulas import conta_celulas
 from random import randint
 import cv2
+import pickle
 
-def anotar_regioes(numero_regioes):
+# PATH = "/home/nayara/Desktop/TCC/index_image/"
+
+def anotar_regioes(numero_regioes, path):
+
+    try:
+        regioes_anotadas = pickle.load(open('regioes_anotadas.p','rb'))
+    except:
+        regioes_anotadas = []
+
     for i in range(0, numero_regioes):
         index_image = randint(1,129)
-        imagem = cv2.imread('/home/nayara/Desktop/TCC/imagens2606/IMG_20170626_191737083_HDR.jpg',cv2.IMREAD_COLOR)
+        file_name = path + str(index_image) + ".jpg"
+        imagem = cv2.imread(file_name,cv2.IMREAD_COLOR)
         regioes = conta_celulas(imagem=imagem)
         quantidade_regioes = len(regioes)
         index_region = randint(0, quantidade_regioes-1)
@@ -35,3 +45,11 @@ def anotar_regioes(numero_regioes):
             regiao.classe = 'o'
         else:
             print("Nada")
+
+        if regiao.classe is not None:
+            regioes_anotadas.append(regiao.get_dict())
+
+    pickle.dump(regioes_anotadas, open("regioes_anotadas.p", "wb"))
+
+
+# anotar_regioes(50, PATH)
