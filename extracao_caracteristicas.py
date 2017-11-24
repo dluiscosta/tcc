@@ -12,7 +12,7 @@ def perimetro(regiao): #1
     return sum(map(lambda cnt: cv2.arcLength(cnt, True), regiao))
 
 def tem_buraco(regiao): #2
-    return len(regiao) > 1
+    return 1 if len(regiao) > 1 else 0
 
 def area_retangulo(regiao): #3
     x, y, w, h = cv2.boundingRect(regiao[0])

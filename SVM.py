@@ -16,7 +16,7 @@ def svm_predict(svm_cells, sample):
     return svm_cells.predict(sample)
 
 
-def load_regioes_anotadas(file_name_pk):
+def load_regioes_anotadas(file_name_pk, tipo):
     try:
         regioes_anotadas = pickle.load(open(file_name_pk,'rb'))
     except:
@@ -25,7 +25,10 @@ def load_regioes_anotadas(file_name_pk):
     y = []
     for regiao in regioes_anotadas:
         X.append(regiao['caracteristicas'])
-        y.append(regiao['classe'])
+        if tipo == 0: # SVM neutrofilo vs outros
+            y.append(regiao['classe'] if regiao['classe'] == 'n' else 'o' )
+        else:
+            y.append(regiao['classe'] if regiao['classe'] == 'l' else 'o' )
     X = numpy.array(X)
     y = numpy.array(y)
     return X, y
@@ -55,8 +58,6 @@ def classifica_imagem(svm, file_name):
     cv2.imshow('imagem', imagem)
     k = cv2.waitKey(0)
 
-# X, y = load_regioes_anotadas('regioes_anotadas.p')
-# svm = svm_cells(X, y)
-# classifica_imagem(svm, "/home/nayara/Desktop/TCC/index_image/69.jpg")
-
-# print(svm_predict(svm, sample))
+X, y = load_regioes_anotadas('regioes_anotadas.p', 0)
+svm = svm_cells(X, y)
+classifica_imagem(svm, "/home/nayara/Desktop/TCC/index_image/69.jpg")

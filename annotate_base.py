@@ -4,7 +4,7 @@ from random import randint
 import cv2
 import pickle
 
-# PATH = "/home/nayara/Desktop/TCC/index_image/"
+PATH = "/home/nayara/Desktop/TCC/index_image/"
 
 def anotar_regioes(numero_regioes, path):
 
@@ -23,7 +23,7 @@ def anotar_regioes(numero_regioes, path):
 
         cv2.namedWindow('imagem', cv2.WINDOW_NORMAL)
         cv2.resizeWindow('imagem', 600,600)
-        cv2.drawContours(imagem, regioes[index_region][0], -1, (0,255,0), 6)
+        cv2.drawContours(imagem, regioes[index_region][0], -1, (0,0,255), 6)
         cv2.imshow('imagem', imagem)
 
         regiao = Regiao(regioes[index_region])
@@ -52,4 +52,4 @@ def anotar_regioes(numero_regioes, path):
     pickle.dump(regioes_anotadas, open("regioes_anotadas.p", "wb"))
 
 
-# anotar_regioes(50, PATH)
+anotar_regioes(300, PATH)
