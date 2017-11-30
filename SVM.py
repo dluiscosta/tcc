@@ -40,6 +40,9 @@ def classifica_imagem(svm, file_name):
     cv2.namedWindow('imagem', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('imagem', 600,600)
 
+    q_n = 0
+    q_l = 0
+
     for regiao_encontrada in regioes_encontradas:
         regiao = Regiao(regiao_encontrada)
         regiao.extrai_caracteristicas()
@@ -49,15 +52,19 @@ def classifica_imagem(svm, file_name):
         classe = svm_predict(svm, X)[0]
 
         if classe == 'n':
+            q_n+=1
             cv2.drawContours(imagem, regiao.get_contorno(), -1, (0,255,0), 6)
         elif classe == 'l':
+            q_l+=1
             cv2.drawContours(imagem, regiao.get_contorno(), -1, (255,0,0), 6)
         else:
             cv2.drawContours(imagem, regiao.get_contorno(), -1, (0,0,255), 6)
 
+    print(q_n)
+    print(q_l)
     cv2.imshow('imagem', imagem)
     k = cv2.waitKey(0)
 
-X, y = load_regioes_anotadas('regioes_anotadas.p', 0)
+X, y = load_regioes_anotadas('regioes_anotadas.p', 1)
 svm = svm_cells(X, y)
-classifica_imagem(svm, "/home/nayara/Desktop/TCC/index_image/69.jpg")
+classifica_imagem(svm, "/home/nayara/Desktop/TCC/index_image/41.jpg")
