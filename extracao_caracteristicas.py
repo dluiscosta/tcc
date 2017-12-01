@@ -16,7 +16,7 @@ def solidez(regiao): #2
 def perimetro(regiao): #3
     return sum(map(lambda cnt: cv2.arcLength(cnt, True), regiao))
 
-def compactividade(regiao): #4
+def compacidade(regiao): #4
     p2 = perimetro(regiao)**2
     return area(regiao)/p2 if p2 != 0 else 0
 
@@ -34,7 +34,7 @@ def retangularidade(regiao): #6
 def tem_buraco(regiao): #7
     return len(regiao) > 1
 
-caracteristicas_geometricas = [area, area_convex_hull, solidez, perimetro, compactividade, circularidade, retangularidade, tem_buraco]
+caracteristicas_geometricas = [area, area_convex_hull, solidez, perimetro, compacidade, circularidade, retangularidade, tem_buraco]
 
 
 #Caracteristicas de textura
@@ -56,15 +56,14 @@ normalizado = False
 #Calcula a media e o desvio padrao das imagens em um conjunto de treinamento
 #para posterior normalizacao das caracteristicas
 def define_normalizacao(regioes, imagens):
-    caracteristicas = map(lambda x: np.array(extracao_caracteristicas(*x, idx_caracteristicas = range(11), normalizar=False)),
-                          zip(regioes, imagens))
-    
+    caracteristicas = map(lambda x: np.array(extracao_caracteristicas(*x, idx_caracteristicas = range(11), normalizar=False)), zip(regioes, imagens))
+
     global medias
     medias = np.mean(caracteristicas, axis=0)
-    
+
     global desvios_padroes
     desvios_padroes = np.std(caracteristicas, axis=0)
-    
+
     global normalizado
     normalizado = True
 
@@ -75,10 +74,10 @@ def extracao_caracteristicas(regiao, #lista de contornos, sendo o primeiro exter
                              imagem,
                              idx_caracteristicas, #lista com os indices das caracteristicas utilizadas
                              normalizar=True):
-    
-    c_g = map(lambda car: car(regiao),[caracteristicas_geometricas[i] 
+
+    c_g = map(lambda car: car(regiao),[caracteristicas_geometricas[i]
               for i in idx_caracteristicas if i < len(caracteristicas_geometricas)])
-    
+
     #Encontra os pixels internos a regiao
     im_c = cv2.cvtColor(imagem, cv2.cv.CV_BGR2GRAY)
     mascara = np.zeros(im_c.shape, dtype=np.uint8)
@@ -86,15 +85,15 @@ def extracao_caracteristicas(regiao, #lista de contornos, sendo o primeiro exter
     cv2.drawContours(mascara, regiao[1:], -1, 0, -1)
     pixels_internos = im_c[mascara == 255]
 
-    c_t = map(lambda car: car(pixels_internos),[caracteristicas_textura[i-len(caracteristicas_geometricas)] 
+    c_t = map(lambda car: car(pixels_internos),[caracteristicas_textura[i-len(caracteristicas_geometricas)]
               for i in idx_caracteristicas if i >= len(caracteristicas_geometricas)])
-    
+
     cs = np.array(c_g + c_t)
-    
+
     if normalizar:
         if normalizado:
             cs = (cs - medias)/desvios_padroes
         else:
             raise("Normalizacao nao foi definida!")
-        
+
     return cs
