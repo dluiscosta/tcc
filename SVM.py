@@ -5,6 +5,7 @@ import numpy
 import cv2
 from conta_celulas import conta_celulas
 from regiao import Regiao
+import pandas as pd
 
 def svm_cells(X, y):
     svm_linear = svm.SVC()
@@ -16,6 +17,25 @@ def svm_predict(svm_cells, sample):
     return svm_cells.predict(sample)
 
 
+def normaliza_caracteristicas(X):
+    regioes_anotadas_np = numpy.array(X)
+    q_caracteristicas = regioes_anotadas_np.shape[1]
+
+    medias = []
+    desvios = []
+
+    for i in range(q_caracteristicas):
+        serie = pd.Series(regioes_anotadas_np[:,i])
+        medias.append(serie.mean())
+        desvios.append(serie.std())
+
+    for r in X:
+        for i in range(q_caracteristicas):
+            r[i] = (r[i] - medias[i]) / desvios[i]
+
+    return X, medias, desvios
+
+
 def load_regioes_anotadas(file_name_pk, tipo):
     try:
         regioes_anotadas = pickle.load(open(file_name_pk,'rb'))
@@ -23,6 +43,7 @@ def load_regioes_anotadas(file_name_pk, tipo):
         regioes_anotadas = []
     X = []
     y = []
+
     for regiao in regioes_anotadas:
         X.append(regiao['caracteristicas'])
         if tipo == 0: # SVM neutrofilo vs outros
@@ -33,7 +54,7 @@ def load_regioes_anotadas(file_name_pk, tipo):
     y = numpy.array(y)
     return X, y
 
-def classifica_imagem(svm, file_name):
+def classifica_imagem(svm, file_name, medias, desvios):
     imagem = cv2.imread(file_name,cv2.IMREAD_COLOR)
     regioes_encontradas = conta_celulas(imagem=imagem)
 
@@ -47,9 +68,12 @@ def classifica_imagem(svm, file_name):
         regiao = Regiao(regiao_encontrada)
         regiao.extrai_caracteristicas()
 
-        X = [regiao.caracteristicas]
+        X = regiao.caracteristicas
 
-        classe = svm_predict(svm, X)[0]
+        for i in range(len(medias)):
+            X[i] = (X[i] - medias[i]) / desvios[i]
+
+        classe = svm_predict(svm, [X])[0]
 
         if classe == 'n':
             q_n+=1
@@ -66,5 +90,6 @@ def classifica_imagem(svm, file_name):
     k = cv2.waitKey(0)
 
 X, y = load_regioes_anotadas('regioes_anotadas.p', 1)
+X, medias, desvios = normaliza_caracteristicas(X=X)
 svm = svm_cells(X, y)
-classifica_imagem(svm, "/home/nayara/Desktop/TCC/index_image/41.jpg")
+classifica_imagem(svm, "/home/nayara/Desktop/TCC/index_image/41.jpg", medias, desvios)
