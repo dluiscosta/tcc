@@ -2,6 +2,8 @@ import cv2
 import cv2.cv
 import numpy as np
 from exibir_imagens import mostra_imagens
+import random as rd
+import matplotlib
 
 #Ordem em que a base sera anotada.
 la1 = [111, 128, 77, 82, 86, 115, 90, 81, 13, 8, 47, 5, 93, 36, 26, 53, 54, 79,
@@ -270,20 +272,43 @@ class Patch:
                    
         #Retorna a media de menores diferencas entre todas as celulas
         return np.mean(min_diffs) if len(min_diffs) > 0 else 1
-                        
+
+class Regiao:
+    def __init__(self, contornos, imagem, indice):
+        self.contornos = contornos
+        self.imagem = imagem
+        self.indice = indice
+        self.classe = None
+        self.caracteristicas = []
+                   
+    def mostra(self, imagem):
+        if(imagem.indice != self.imagem):
+            raise Exception("Imagem errada!")
+            
+        #Desenha os contornos na imagem, destacando os da regiao sendo anotada
+        im_c = imagem.get_imagem()
+        for reg in imagem.regioes:
+            cv2.drawContours(im_c, reg.contornos, -1, [200, 200, 200], 1)
+        cv2.drawContours(im_c, self.contornos, -1, [0, 0, 255], 1)
+        
+        #Mostra a imagem
+        x, y, w, h = cv2.boundingRect(self.contornos[0])
+        c_y, c_x = (y+h/w, x+w/2)
+        mostra_imagens([im_c[c_y-100:c_y+100,c_x-100:c_x+100]], 
+                       "Imagem " + str(self.imagem) + ", regiao " + str(self.indice))
+        
 class Imagem:
     def __init__(self, indice):
         self.indice = indice
         self.lamina = None
         self.patch = None
-        self.foco = None
-        self.obstruida = None
+        self.regioes = None
+        self.regioes_anotadas = 0
         
     def get_patch(self):
         if self.lamina is None:
             raise Exception("Voce nao definiu a lamina!")
         elif self.patch is None:
-            import random as rd
             rd.seed(self.indice)
             h, w = shape_imagens
             patch = Patch(canto = (rd.randint(0, h), rd.randint(0, w)))
@@ -295,6 +320,35 @@ class Imagem:
         else:
             return self.patch      
             
+    def set_regioes(self, extrator):
+        if self.regioes is not None:
+            raise Exception("Voce ja definiu as regioes dessa imagem!")
+        regioes_extraidas = extrator(self.get_imagem())
+        self.regioes = [Regiao(contornos_regiao, self.indice, i) for i,contornos_regiao in enumerate(regioes_extraidas)]
+    
+    def anotar_regiao(self):
+        #Escolhe uma regiao nao anotada
+        rg = rd.randint(0, len(self.regioes)-1)
+        while self.regioes[rg].classe is not None:
+            rg = rd.randint(0, len(self.regioes)-1)
+        regiao = self.regioes[rg]    
+        
+        #Mostra a regiao
+        regiao.mostra(self)
+
+        #Le a anotacao
+        print "n = neutrofilo, np = parte de um neutrofilo, nd = dois ou mais neutrofilos"
+        print "l = linfocito, lp = parte de um linfocito, ld = dois ou mais linfocitos"
+        print "o = outros"
+        anotacao = str(raw_input("Anotacao: "))
+        while anotacao not in ("n", "np", "nd", "l", "lp", "ld", "o", "cancel"):
+            if anotacao == "cancel":
+                return
+            anotacao = str(raw_input("Anotacao invalida. Reescreva: "))
+
+        self.regioes_anotadas += 1
+        regiao.classe = anotacao
+        
     def get_imagem(self):
         return cv2.imread("base\\" + str(self.indice) + ".jpg", cv2.IMREAD_COLOR)
     
@@ -317,9 +371,19 @@ class Base:
         print "Todas as laminas foram anotadas"
         return
     
+    def anotar_regiao(self):
+        im = rd.randint(0, len(self.imagens)-1)
+        while self.imagens[im].regioes_anotadas == len(self.imagens[im].regioes):
+            im = rd.randint(0, len(self.imagens)-1)
+        self.imagens[im].anotar_regiao()
+        return
+            
     def get_imagens(self, condicoes=(lambda x: True)):
         return [x for x in self.imagens if condicoes(x)] 
         
+    def get_regioes(self, condicoes=(lambda x: True)):
+        return [r for im in self.imagens for r in im.regioes if condicoes(r)] 
+    
     def salvar(self):
         import pickle
         with open("anotacoes.pkl", "wb") as f:

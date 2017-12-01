@@ -2,8 +2,12 @@ import cv2
 import cv2.cv
 from exibir_imagens import mostra_imagens
 
-def limiarizacao_divergencia_fuzzy(imagem, mascara=None, c=float(1)/(255 - 0),
+def limiarizacao_divergencia_fuzzy(imagem, mascara=None, cor=1, c=float(1)/(255 - 0),
                                    gamma=1, analise=False):    
+    #Pega apenas o canal (ou a imagem em grayscale) especificado
+    if cor != -1: #caso contrario, a imagem fornecida ja e de 1 canal
+        imagem = imagem[:,:,cor] if cor <= 2 else cv2.cvtColor(imagem, cv2.cv.CV_BGR2GRAY)
+    
     if analise:
         from matplotlib import pyplot as plt
         print "- Limiarizacao por divergencia fuzzy -"
@@ -44,7 +48,7 @@ def limiarizacao_divergencia_fuzzy(imagem, mascara=None, c=float(1)/(255 - 0),
             #Com os valores de parametro padroes, a formula fica igual a em
             #Ghosh, 2010. 
             #a distribuicao Cauchy generica nao possui o parametro "c".
-            pertinencia = (1/(c*pi*gamma))*(
+            pertinencia = (c/(pi*gamma))*(
                     1/(1 + ((intensidade - mi)/gamma)**2))    
         
             if analise:

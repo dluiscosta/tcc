@@ -7,3 +7,4 @@ from delimitacao_otsu import delimitacao_otsu as do
 from remocao_ruidos import remocao_ruidos as rr
 import base
 from limiarizacao import limiarizacao
+from extracao_caracteristicas import *

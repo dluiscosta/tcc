@@ -14,9 +14,9 @@ import cv2
 notas = notas[2,3] #Apenas filtro de mediana, tamanho 9x9
 
 ##Parametros variados
-cores = ["blue", "green", "red", "gray"]
-cs = np.linspace(start=1/float(256), stop=5, num=20)
-gammas = np.linspace(start=1, stop=400, num=30)
+cores = ["blue", "green", "red", "grey"]
+cs = np.linspace(start=1/float(256), stop=2.5, num=10)
+gammas = np.linspace(start=1, stop=150, num=10)
 
 #Carrega as imagens
 import base
@@ -37,7 +37,7 @@ ims_cor = ([[im[:,:,c] for im in patchs_filt] for c,cor in enumerate(cores[:-1])
 
 from limiarizacao_divergencia_fuzzy import limiarizacao_divergencia_fuzzy as ldf
 def get_ldf(im, c, gamma, cor):
-    limiar = ldf(im, c=c, gamma=gamma)[0]
+    limiar = ldf(im, cor=-1, c=c, gamma=gamma)[0]
     print (c, gamma, cor, limiar)
     return limiar
 
@@ -50,7 +50,7 @@ limiares = [[[[
 limiares = np.array(limiares)
 
 #Salva os resultados
-with open("experimentos//fuzzy02.pkl", "wb") as f:
+with open("experimentos//fuzzy03.pkl", "wb") as f:
     parametros = (cores, cs, gammas, [im.indice for im in ims])
     pickle.dump((parametros, limiares), f)
     f.close()
@@ -73,7 +73,7 @@ notas_ldf = [[[[
 notas_ldf = np.array(notas_ldf)
 
 #Salva os resultados
-with open("experimentos//fuzzy02.pkl", "wb") as f:
+with open("experimentos//fuzzy03.pkl", "wb") as f:
     parametros = (cores, cs, gammas, [im.indice for im in ims])
     pickle.dump((parametros, limiares, notas_ldf), f)
     f.close()
