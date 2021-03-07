@@ -1,2 +1,2 @@
-*.p -linguist-detectable
-*.pkl -linguist-detectable
+*.p linguist-vendored
+*.pkl linguist-vendored
